@@ -1,30 +1,29 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const Joi = require('joi'); 
-const multer = require('multer'); 
+const Joi = require('joi'); // Import Joi
+const multer = require('multer'); // Import multer
 const port = process.env.PORT || 3001; 
+const path = require('path');
 
-app.use(cors()); 
-app.use(express.json()); 
+app.use(cors());
+app.use(express.json());
 app.use(express.static('public')); 
-const path = require('path'); 
-app.use("/uploads", express.static("uploads"));
 
+// Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'public', 'images'));
+      cb(null, "./public/images/");
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+      cb(null, file.originalname);
     },
-});
+  });
+  
+  const upload = multer({ storage: storage });
 
-const upload = multer({ storage: storage });
-
-app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/public/index.html");
+app.get("/",(req, res)=>{
+    res.sendFile(__dirname+"/index.html");
 });
 
 let pokemonCards = [
@@ -110,14 +109,6 @@ let pokemonCards = [
     }
 ];
 
-const cardSchema = Joi.object({
-    name: Joi.string().required(),
-    type: Joi.string().required(),
-    hp: Joi.number().integer().positive().required(),
-    abilities: Joi.array().items(Joi.string()).required(),
-    rarity: Joi.string().required(),
-    set: Joi.string().required()
-});
 
 // POST Endpoint for Adding New Pokemon
 app.post('/api/pokemon', upload.single('image'), (req, res) => {
@@ -125,23 +116,24 @@ app.post('/api/pokemon', upload.single('image'), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
     }
+    const { name, type, hp, abilities, rarity, set } = req.body;
 
-    //Joi validation from before
-    const { error, value } = cardSchema.validate(req.body); // Validate the request body
-
-    if (error) {
-        return res.status(400).json({ success: false, message: error.details[0].message });
+    if(!name || !type || !hp || !abilities || !rarity || !set) {
+      return res.status(400).json({ success: false, message: 'Please Provide Required Form Data'})
     }
-
-    const newCard = {
+   const newCard = {
         _id: pokemonCards.length > 0 ? pokemonCards[pokemonCards.length - 1]._id + 1 : 1,
-        ...value,
-        img_name: 'images/' + req.file.filename, // Store the image file name
-
+        name: name,
+        type: type,
+        hp: hp,
+        abilities: abilities.split(","),
+        rarity: rarity,
+        set: set,
+        img_name: 'images/' + req.file.filename // Store the image file name
     };
-    pokemonCards.push(newCard); // Add the card to the array
+    pokemonCards.push(newCard);
 
-    res.status(201).json({ success: true, message: 'Card added successfully!', card: newCard }); // Return success message and the new card
+    res.status(201).json({ success: true, message: 'Card added successfully!', card: newCard });
 });
 
 app.get('/api/pokemon', (req, res)=>{
