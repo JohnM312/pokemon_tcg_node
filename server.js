@@ -111,7 +111,7 @@ let pokemonCards = [
 
 
 // POST Endpoint for Adding New Pokemon
-app.post('https://pokemon-tcg-node.onrender.com/api/pokemon', upload.single('image'), (req, res) => {
+app.post('/api/pokemon', upload.single('image'), (req, res) => {
     console.log(req.file);
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
@@ -136,7 +136,7 @@ app.post('https://pokemon-tcg-node.onrender.com/api/pokemon', upload.single('ima
     res.status(201).json({ success: true, message: 'Card added successfully!', card: newCard });
 });
 
-app.get('https://pokemon-tcg-node.onrender.com/api/pokemon', (req, res)=>{
+app.get('/api/pokemon', (req, res)=>{
     res.json(pokemonCards);
 });
 
