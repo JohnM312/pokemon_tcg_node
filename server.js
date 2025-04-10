@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const Joi = require('joi'); // Import Joi
-const multer = require('multer'); // Import multer
+const Joi = require('joi'); 
+const multer = require('multer'); 
 const port = process.env.PORT || 3001; 
 const path = require('path');
 
@@ -111,7 +111,7 @@ let pokemonCards = [
 
 
 // POST Endpoint for Adding New Pokemon
-app.post('/api/pokemon', upload.single('image'), (req, res) => {
+app.post('https://pokemon-tcg-node.onrender.com/api/pokemon', upload.single('image'), (req, res) => {
     console.log(req.file);
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
@@ -136,7 +136,7 @@ app.post('/api/pokemon', upload.single('image'), (req, res) => {
     res.status(201).json({ success: true, message: 'Card added successfully!', card: newCard });
 });
 
-app.get('/api/pokemon', (req, res)=>{
+app.get('https://pokemon-tcg-node.onrender.com/api/pokemon', (req, res)=>{
     res.json(pokemonCards);
 });
 
