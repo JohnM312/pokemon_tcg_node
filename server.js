@@ -133,7 +133,7 @@ const validateCard = (card) => {
 };
 
 // POST Endpoint for Adding New Pokemon
-app.post('api/pokemon', upload.single('image'), (req, res) => {
+app.post('/api/pokemon', upload.single('image'), (req, res) => {
     console.log(req.file);
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
@@ -157,7 +157,7 @@ app.post('api/pokemon', upload.single('image'), (req, res) => {
     res.status(201).json({ success: true, message: 'Card added successfully!', card: newCard });
 });
 
-app.put('api/pokemon:id', upload.single('image'), (req, res) => {
+app.put('/api/pokemon:id', upload.single('image'), (req, res) => {
     const cardId = parseInt(req.params.id);
     const cardIndex = pokemonCards.findIndex(card => card._id === cardId);
 
@@ -183,7 +183,7 @@ app.put('api/pokemon:id', upload.single('image'), (req, res) => {
 });
 
 //DELETE Route from api
-app.delete('api/pokemon:id', (req, res) => {
+app.delete('/api/pokemon:id', (req, res) => {
     const cardId = parseInt(req.params.id); // Parse the ID
     const cardIndex = pokemonCards.findIndex(card => card._id === cardId);
 
@@ -195,7 +195,7 @@ app.delete('api/pokemon:id', (req, res) => {
       res.json({ success: true, message: 'Card deleted successfully!' }); // Return success message
   });
 
-app.get('api/pokemon', (req, res)=>{
+app.get('/api/pokemon', (req, res)=>{
     res.json(pokemonCards);
 });
 
