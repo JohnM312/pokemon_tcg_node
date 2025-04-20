@@ -28,7 +28,6 @@ app.get("/", (req, res) => {
 });
 
 let pokemonCards = [
-    [
         {
             "_id": 1,
             "name": "Pikachu",
@@ -109,7 +108,6 @@ let pokemonCards = [
             "rarity": "EX",
             "set": "Sky Legends"
         }
-    ]
 ];
 
 const cardSchema = Joi.object({
@@ -135,7 +133,7 @@ const validateCard = (card) => {
 };
 
 // POST Endpoint for Adding New Pokemon
-app.post('http://localhost:3000/pokemon-tcg-reacts/catalog', upload.single('image'), (req, res) => {
+app.post('api/pokemon/', upload.single('image'), (req, res) => {
     console.log(req.file);
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file uploaded.' });
@@ -159,7 +157,7 @@ app.post('http://localhost:3000/pokemon-tcg-reacts/catalog', upload.single('imag
     res.status(201).json({ success: true, message: 'Card added successfully!', card: newCard });
 });
 
-app.put('http://localhost:3000/pokemon-tcg-reacts/catalog:id', upload.single('image'), (req, res) => {
+app.put('api/pokemon/:id', upload.single('image'), (req, res) => {
     const cardId = parseInt(req.params.id);
     const cardIndex = pokemonCards.findIndex(card => card._id === cardId);
 
@@ -173,7 +171,7 @@ app.put('http://localhost:3000/pokemon-tcg-reacts/catalog:id', upload.single('im
         name: req.body.name,
         type: req.body.type,
         hp: req.body.hp,
-        abilities: req.body.abilities.split(","),
+        abilities: req.body.abilities,
         rarity: req.body.rarity,
         set: req.body.set,
         img_name: req.file ? "images/" + req.file.filename : pokemonCards[cardIndex].img_name,
@@ -185,7 +183,7 @@ app.put('http://localhost:3000/pokemon-tcg-reacts/catalog:id', upload.single('im
 });
 
 //DELETE Route from api
-app.delete('http://localhost:3000/pokemon-tcg-reacts/catalog:id', (req, res) => {
+app.delete('api/pokemon/:id', (req, res) => {
     const cardId = parseInt(req.params.id); // Parse the ID
     const cardIndex = pokemonCards.findIndex(card => card._id === cardId);
 
@@ -197,7 +195,7 @@ app.delete('http://localhost:3000/pokemon-tcg-reacts/catalog:id', (req, res) => 
       res.json({ success: true, message: 'Card deleted successfully!' }); // Return success message
   });
 
-app.get('http://localhost:3000/pokemon-tcg-reacts/catalog', (req, res)=>{
+app.get('api/pokemon/', (req, res)=>{
     res.json(pokemonCards);
 });
 
