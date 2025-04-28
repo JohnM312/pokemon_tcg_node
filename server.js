@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const express = require("express");
 const cors = require("cors");
 const app = express();
@@ -26,98 +27,28 @@ const upload = multer({ storage: storage });
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/public/index.html");
 });
+mongoose
+    .connect(
+    "mongodb+srv://JohnM312:jj1917MAI@cluster0.hl7jiys.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    )   
+    .then(() => {
+        console.log("Connected to MongoDB")
+    })
+    .catch((error) => {
+        console.log("Couldn't connect to MongoDB", error);
+    });
 
-let pokemonCards = [
-        {
-            "_id": 1,
-            "name": "Pikachu",
-            "img_name": "images/Pikachu V.jpg",
-            "type": "Electric",
-            "hp": 190,
-            "abilities": ["Lightning Blast (100+)"],
-            "rarity": "V",
-            "set": "Base Set"
-        },
-        {
-            "_id": 2,
-            "name": "Charizard",
-            "img_name": "images/Charizard EX.png",
-            "type": "Fire",
-            "hp": 120,
-            "abilities": ["Slash (60)", "Crimson Storm (200)"],
-            "rarity": "EX",
-            "set": "Base Set"
-        },
-        {
-            "_id": 3,
-            "name": "Blastoise",
-            "img_name": "images/Blastoise EX.png",
-            "type": "Water",
-            "hp": 100,
-            "abilities": ["Surf (40)", "Hydro Bazooka (100)"],
-            "rarity": "EX",
-            "set": "Base Set"
-        },
-        {
-            "_id": 4,
-            "name": "Venusaur",
-            "img_name": "images/Venasaur EX.png",
-            "type": "Grass",
-            "hp": 110,
-            "abilities": ["Giant Bloom (100)", "Razor Leaf (60)"],
-            "rarity": "EX",
-            "set": "Base Set"
-        },
-        {
-            "_id": 5,
-            "name": "Gengar",
-            "img_name": "images/Gengar Uncommon.png",
-            "type": "Ghost",
-            "hp": 90,
-            "abilities": ["Hypnoblast (90)"],
-            "rarity": "Uncommon",
-            "set": "Haunted Shadows"
-        },
-        {
-            "_id": 6,
-            "name": "Mewtwo",
-            "img_name": "images/Mewtwo EX.png",
-            "type": "Psychic",
-            "hp": 130,
-            "abilities": ["Psychic Sphere (50)", "Psydrive (120)"],
-            "rarity": "EX",
-            "set": "Psychic Masters"
-        },
-        {
-            "_id": 7,
-            "name": "Lucario",
-            "img_name": "images/Lucario Uncommon.png",
-            "type": "Fighting",
-            "hp": 100,
-            "abilities": ["Avenging Knuckle (30+)", "Accelerating Stab (120)"],
-            "rarity": "Uncommon",
-            "set": "Battle Warriors"
-        },
-        {
-            "_id": 8,
-            "name": "Rayquaza",
-            "img_name": "images/Rayquaza EX.jpg",
-            "type": "Dragon",
-            "hp": 140,
-            "abilities": ["Intensifying Burn (10+)", "Dragon Pulse (100)"],
-            "rarity": "EX",
-            "set": "Sky Legends"
-        }
-];
-
-const cardSchema = Joi.object({
-    name: Joi.string().required(),
-    type: Joi.string().required(),
-    hp: Joi.number().integer().positive().required(),
-    abilities: Joi.array().items(Joi.string()).required(),
-    rarity: Joi.string().required(),
-    set: Joi.string().required()
+const cardSchema = new mongoose.Schema({
+    name: { type: String, required: true, minlength: 3 },
+    type: { type: String, required: true },
+    hp: { type: Number, required: true, min: 1 },
+    abilities: { type: [String], required: true },
+    rarity: { type: String, required: true },
+    set: { type: String, required: true },
+    img_name: { type: String, required: true } // Path to the image
 });
+
+const Card = mongoose.model('Card', cardSchema);
 
 const validateCard = (card) => {
     const schema = Joi.object({
@@ -133,70 +64,92 @@ const validateCard = (card) => {
 };
 
 // POST Endpoint for Adding New Pokemon
-app.post('/api/pokemon', upload.single('image'), (req, res) => {
-    console.log(req.file);
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No image file uploaded.' });
-    }
-   const { name, type, hp, abilities, rarity, set } = req.body;
-    if(!name || !type || !hp || !abilities || !rarity || !set) {
-      return res.status(400).json({ success: false, message: 'Please Provide Required Form Data'})
-    }
-    const newCard = {
-        _id: pokemonCards.length > 0 ? pokemonCards[pokemonCards.length - 1]._id + 1 : 1,
-        name: req.body.name,
-        type: req.body.type,
-        hp: req.body.hp,
-        abilities: req.body.abilities.split(","),
-        rarity: req.body.rarity,
-        set: req.body.set,
-        img_name: 'images/' + req.file.filename
-    };
-    pokemonCards.push(newCard);
+app.post('/api/pokemon', upload.single('image'), async (req, res) => {
+  console.log(req.file);
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No image file uploaded.' });
+  }
 
-    res.status(201).json({ success: true, message: 'Card added successfully!', card: newCard });
-});
+  const { name, type, hp, abilities, rarity, set } = req.body;
 
-app.put('/api/pokemon:id', upload.single('image'), (req, res) => {
-    const cardId = parseInt(req.params.id);
-    const cardIndex = pokemonCards.findIndex(card => card._id === cardId);
+  if (!name || !type || !hp || !abilities || !rarity || !set) {
+    return res.status(400).json({ success: false, message: 'Please Provide Required Form Data' });
+  }
 
-    if (cardIndex === -1) {
-        return res.status(404).json({ success: false, message: 'Card not found' });
-    }
+  // Joi Validation
+  const { error } = validateCard(req.body);
+  if (error) {
+    return res.status(400).json({ success: false, message: error.details[0].message });
+  }
 
-    // Update the Pokémon card based on index
-    const updatePokemon = {
-        _id: cardId,
-        name: req.body.name,
-        type: req.body.type,
-        hp: req.body.hp,
-        abilities: req.body.abilities,
-        rarity: req.body.rarity,
-        set: req.body.set,
-        img_name: req.file ? "images/" + req.file.filename : pokemonCards[cardIndex].img_name,
-    }
-
-    pokemonCards[cardIndex] = updatePokemon
-
-    res.json({ success: true, message: 'Card updated successfully', card: pokemonCards[cardIndex]});
-});
-
-//DELETE Route from api
-app.delete('/api/pokemon:id', (req, res) => {
-    const cardId = parseInt(req.params.id); // Parse the ID
-    const cardIndex = pokemonCards.findIndex(card => card._id === cardId);
-
-      if (cardIndex === -1) {
-        return res.status(404).json({ success: false, message: 'Card not found' });
-      }
-
-    pokemonCards.splice(cardIndex, 1);
-      res.json({ success: true, message: 'Card deleted successfully!' }); // Return success message
+  const newCard = new Card({
+    name: req.body.name,
+    type: req.body.type,
+    hp: req.body.hp,
+    abilities: req.body.abilities.split(","),
+    rarity: req.body.rarity,
+    set: req.body.set,
+    img_name: 'images/' + req.file.filename
   });
 
-app.get('/api/pokemon', (req, res)=>{
-    res.json(pokemonCards);
+  try {
+    const savedCard = await newCard.save();
+    res.status(201).json({ success: true, message: 'Card added successfully!', card: savedCard });
+  } catch (err) {
+    console.error("Error saving card:", err);
+    res.status(500).json({ success: false, message: 'Failed to save card.', error: err });
+  }
+});
+
+app.put('/api/pokemon/:id', upload.single('image'), async (req, res) => {
+    try {
+        const cardId = req.params.id;
+        const { name, type, hp, abilities, rarity, set } = req.body;
+        const card = await Card.findByIdAndUpdate(cardId, {
+            name: name,
+            type: type,
+            hp: hp,
+            abilities: abilities.split(','),
+            rarity: rarity,
+            set: set,
+            img_name: req.file ? 'images/' + req.file.filename : req.body.img_name // Use existing image if no new image is uploaded
+        }, { new: true });
+
+        if (!card) {
+            return res.status(404).json({ success: false, message: 'Card not found' });
+        }
+
+        res.json({ success: true, message: 'Card updated successfully', card: card });
+    } catch (error) {
+        console.error("Error updating card:", error);
+        res.status(500).json({ success: false, message: 'Failed to update card.', error: error });
+    }
+});
+
+app.delete('/api/pokemon/:id', async (req, res) => {
+    try {
+        const cardId = req.params.id;
+        const card = await Card.findByIdAndDelete(cardId);
+
+        if (!card) {
+            return res.status(404).json({ success: false, message: 'Card not found' });
+        }
+
+        res.json({ success: true, message: 'Card deleted successfully!' }); // Return success message
+    } catch (error) {
+        console.error("Error deleting card:", error);
+        res.status(500).json({ success: false, message: 'Failed to delete card.', error: error });
+    }
+});
+
+app.get('/api/pokemon', async (req, res) => {
+    try {
+        const cards = await Card.find();
+        res.json(cards);
+    } catch (error) {
+        console.error("Error getting cards:", error);
+        res.status(500).json({ success: false, message: 'Failed to get cards', error: error });
+    }
 });
 
 app.listen(port, ()=>{
